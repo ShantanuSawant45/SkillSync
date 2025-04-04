@@ -97,15 +97,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Skip button
-                TextButton(
+                ElevatedButton(
                   onPressed: () {
                     _pageController.jumpToPage(2);
                   },
-                  child: Text(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white.withOpacity(0.9),
+                    backgroundColor: Colors.black26,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 4,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                  ),
+                  child: const Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -126,7 +135,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
 
                 // Next/Done button
-                TextButton(
+                ElevatedButton(
                   onPressed: () {
                     if (_isLastPage) {
                       Navigator.of(context).pushReplacement(
@@ -141,11 +150,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       );
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFF00AAFF).withOpacity(0.8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 4,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                  ),
                   child: Text(
                     _isLastPage ? 'Get Started' : 'Next',
                     style: const TextStyle(
-                      color: Color(0xFF00FFFF),
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

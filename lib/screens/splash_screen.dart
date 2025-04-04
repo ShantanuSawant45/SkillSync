@@ -81,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
     _mainAnimationController.forward();
 
     // Navigate to next screen after 3.8 seconds
-    Timer(const Duration(milliseconds: 13800), () {
+    Timer(const Duration(milliseconds: 3800), () {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>

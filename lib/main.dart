@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -35,7 +42,30 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF121212),
         fontFamily: 'Roboto',
       ),
-      home: const SplashScreen(nextScreen: OnboardingScreen()),
+      home: FutureBuilder(
+        future: FirebaseAuth.instance.authStateChanges().first,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // Show a loading indicator while checking auth state
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          } else {
+            final User? user = snapshot.data;
+
+            // If user is already signed in, go directly to home screen
+            if (user != null) {
+              return const HomeScreen();
+            }
+
+            // Otherwise, start with the splash and onboarding flow
+            return const SplashScreen(nextScreen: OnboardingScreen());
+            return HomeScreen();
+          }
+        },
+      ),
     );
   }
 }

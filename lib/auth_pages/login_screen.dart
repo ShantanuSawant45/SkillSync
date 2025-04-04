@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../screens/home_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,15 +14,77 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
+  bool _isLoading = false;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  // Firebase Auth instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // Login with email and password
+  Future<void> _signInWithEmailAndPassword() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        await _auth.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Navigate to Home Screen after successful login
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomeScreen(),
+            ),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = "An error occurred during login";
+
+        if (e.code == 'user-not-found') {
+          errorMessage = "No user found with this email";
+        } else if (e.code == 'wrong-password') {
+          errorMessage = "Incorrect password";
+        } else if (e.code == 'invalid-credential') {
+          errorMessage = "Invalid credentials";
+        } else if (e.code == 'user-disabled') {
+          errorMessage = "This account has been disabled";
+        }
+
+        _showErrorSnackBar(errorMessage);
+      } catch (e) {
+        _showErrorSnackBar("Failed to login: ${e.toString()}");
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -202,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   // Forgot password
                                   GestureDetector(
                                     onTap: () {
-                                      // Navigate to forgot password screen
+                                      _showForgotPasswordDialog();
                                     },
                                     child: const Text(
                                       "Forgot Password?",
@@ -272,6 +335,108 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Dialog for password reset
+  void _showForgotPasswordDialog() {
+    final forgotPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1D0F31),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          "Reset Password",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: forgotPasswordController,
+            style: const TextStyle(color: Colors.white),
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              hintText: "Enter your email",
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.1),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              errorStyle: TextStyle(
+                color: Colors.redAccent.shade100,
+                fontSize: 12,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "Please enter your email";
+              } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                  .hasMatch(value)) {
+                return "Please enter a valid email";
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  await _auth.sendPasswordResetEmail(
+                    email: forgotPasswordController.text.trim(),
+                  );
+                  Navigator.pop(context);
+                  _showSuccessSnackBar("Password reset email sent");
+                } catch (e) {
+                  Navigator.pop(context);
+                  _showErrorSnackBar(
+                    "Failed to send reset email: ${e.toString()}",
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D5A7A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text("Send Link"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Widget _buildInputLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -330,17 +495,7 @@ class _LoginScreenState extends State<LoginScreen> {
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            // Navigate to Home Screen after successful login
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
-              ),
-            );
-          }
-        },
+        onPressed: _isLoading ? null : _signInWithEmailAndPassword,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2D5A7A),
           foregroundColor: Colors.white,
@@ -348,15 +503,25 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 2,
+          disabledBackgroundColor: const Color(0xFF2D5A7A).withOpacity(0.6),
         ),
-        child: const Text(
-          "LOGIN",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : const Text(
+                "LOGIN",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
       ),
     );
   }

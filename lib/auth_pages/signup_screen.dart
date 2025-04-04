@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../screens/home_screen.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -14,12 +15,16 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _acceptTerms = false;
+  bool _isLoading = false;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+
+  // Firebase Auth instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void dispose() {
@@ -28,6 +33,75 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  // Register with email and password
+  Future<void> _registerWithEmailAndPassword() async {
+    if (_formKey.currentState!.validate() && _acceptTerms) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Create user with email and password
+        final UserCredential userCredential =
+            await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Update display name
+        await userCredential.user!
+            .updateDisplayName(_nameController.text.trim());
+
+        // Navigate to Home Screen after successful signup
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomeScreen(),
+            ),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = "An error occurred during signup";
+
+        if (e.code == 'email-already-in-use') {
+          errorMessage = "This email is already in use";
+        } else if (e.code == 'weak-password') {
+          errorMessage = "The password is too weak";
+        } else if (e.code == 'invalid-email') {
+          errorMessage = "The email address is invalid";
+        }
+
+        _showErrorSnackBar(errorMessage);
+      } catch (e) {
+        _showErrorSnackBar("Failed to register: ${e.toString()}");
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } else if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please accept the Terms and Conditions"),
+          backgroundColor: Color(0xFF5D3A72),
+        ),
+      );
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -353,24 +427,7 @@ class _SignupScreenState extends State<SignupScreen> {
       width: double.infinity,
       height: 54,
       child: ElevatedButton(
-        onPressed: () {
-          if (_formKey.currentState!.validate() && _acceptTerms) {
-            // Navigate to Home Screen after successful signup
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
-              ),
-            );
-          } else if (!_acceptTerms) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Please accept the Terms and Conditions"),
-                backgroundColor: Color(0xFF5D3A72),
-              ),
-            );
-          }
-        },
+        onPressed: _isLoading ? null : _registerWithEmailAndPassword,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5D3A72),
           foregroundColor: Colors.white,
@@ -378,15 +435,25 @@ class _SignupScreenState extends State<SignupScreen> {
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 2,
+          disabledBackgroundColor: const Color(0xFF5D3A72).withOpacity(0.6),
         ),
-        child: const Text(
-          "CREATE ACCOUNT",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : const Text(
+                "CREATE ACCOUNT",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
       ),
     );
   }

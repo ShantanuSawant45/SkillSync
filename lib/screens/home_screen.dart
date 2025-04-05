@@ -2,16 +2,11 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:simple_animations/simple_animations.dart';
-
 import '../Feature_pages/Ai_mock_interview.dart';
 import '../Feature_pages/resume_analyser.dart';
 import '../Feature_pages/summary_generator.dart';
 
-// Mock feature screens (to be replaced with actual feature screens)
-// import 'mock_interview_screen.dart';
-// import 'resume_analyzer_screen.dart';
-// import 'summary_generator_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);

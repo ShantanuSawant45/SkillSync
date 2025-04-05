@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:skill_sync/Feature_pages/resume_analyser.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
@@ -56,13 +57,13 @@ class MyApp extends StatelessWidget {
             final User? user = snapshot.data;
 
             // If user is already signed in, go directly to home screen
-            if (user != null) {
-              return const HomeScreen();
-            }
+            // if (user != null) {
+            //   return const HomeScreen();
+            // }
 
             // Otherwise, start with the splash and onboarding flow
-            return const SplashScreen(nextScreen: OnboardingScreen());
-            return HomeScreen();
+            // return const SplashScreen(nextScreen: OnboardingScreen());
+            return ResumeAnalyser();
           }
         },
       ),

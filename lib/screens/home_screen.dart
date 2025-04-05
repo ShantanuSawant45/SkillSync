@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Feature_pages/Ai_mock_interview.dart';
+import '../Feature_pages/Quiz_screen.dart';
 import '../Feature_pages/resume_analyser.dart';
 import '../Feature_pages/summary_generator.dart';
 
@@ -21,6 +22,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _cardsAnimController;
 
   final List<FeatureCard> _featureCards = [
+    FeatureCard(
+      title: 'QuizCraft: Tech Edition',
+      description: 'Test your skills with  quizzes',
+      iconData: Icons.record_voice_over,
+      gradient: const LinearGradient(
+        colors: [Color(0xFF2D5A7A), Color(0xFF3A6E95)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      screen: const Quizscreen(),
+    ),
     FeatureCard(
       title: 'AI Mock Interview',
       description: 'Practice interviews with AI feedback and coaching',
@@ -54,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       screen: const SummaryGenerator(),
     ),
+
   ];
 
   @override

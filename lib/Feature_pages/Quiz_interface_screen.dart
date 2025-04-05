@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
-import 'Quiz_report_screen.dart';
+import 'quiz_report_screen.dart';
 
-class InterviewInterfaceScreen extends StatefulWidget {
+class QuizInterfaceScreen extends StatefulWidget {
   final String category;
 
-  const InterviewInterfaceScreen({Key? key, required this.category})
+  const QuizInterfaceScreen({Key? key, required this.category})
       : super(key: key);
 
   @override
-  _InterviewInterfaceScreenState createState() =>
-      _InterviewInterfaceScreenState();
+  _QuizInterfaceScreenState createState() => _QuizInterfaceScreenState();
 }
 
-class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
+class _QuizInterfaceScreenState extends State<QuizInterfaceScreen> {
   int _currentQuestionIndex = 0;
   List<Map<String, dynamic>> _questions = [];
   bool _isLoading = true;
@@ -178,7 +177,7 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                 builder: (context) => AlertDialog(
                   backgroundColor: const Color(0xFF1A1F38),
                   title: const Text(
-                    'Quit Interview?',
+                    'Quit Quiz?',
                     style: TextStyle(color: Colors.white),
                   ),
                   content: const Text(
@@ -200,7 +199,6 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                 ),
               ) ??
               false;
-
           return confirm;
         }
         return true;
@@ -217,17 +215,6 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          actions: [
-            if (_questions.isNotEmpty && _currentQuestionIndex > 0)
-              TextButton.icon(
-                onPressed: _showQuizReport,
-                icon: const Icon(Icons.summarize, color: Colors.cyanAccent),
-                label: const Text(
-                  'VIEW RESULTS',
-                  style: TextStyle(color: Colors.cyanAccent),
-                ),
-              ),
-          ],
         ),
         body: _isLoading
             ? const Center(
@@ -267,7 +254,7 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('GO BACK'),
+                          child: const Text('Go Back'),
                         ),
                       ],
                     ),
@@ -278,78 +265,49 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Progress indicator
-                        Stack(
-                          children: [
-                            // Background
-                            Container(
-                              height: 8,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[850],
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            // Progress
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 500),
-                              curve: Curves.easeInOut,
-                              height: 8,
-                              width: MediaQuery.of(context).size.width *
-                                  (_currentQuestionIndex + 1) /
-                                  _questions.length *
-                                  0.915,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.cyanAccent,
-                                    Colors.blueAccent
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ],
+                        LinearProgressIndicator(
+                          value:
+                              (_currentQuestionIndex + 1) / _questions.length,
+                          backgroundColor: Colors.grey[800],
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.cyanAccent),
                         ),
 
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Question ${_currentQuestionIndex + 1}/${_questions.length}',
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12.0,
-                                  vertical: 4.0,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getDifficultyColor(
-                                      _questions[_currentQuestionIndex]
-                                          ['difficulty']),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  _questions[_currentQuestionIndex]
-                                          ['difficulty']
-                                      .toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            'Question ${_currentQuestionIndex + 1}/${_questions.length}',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
                           ),
                         ),
+
+                        // Difficulty badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0,
+                            vertical: 4.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getDifficultyColor(
+                                _questions[_currentQuestionIndex]
+                                    ['difficulty']),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _questions[_currentQuestionIndex]['difficulty']
+                                .toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
 
                         // Question
                         Container(
@@ -374,7 +332,7 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
 
                         const SizedBox(height: 24),
 
-                        // Answer options
+                        // Answers
                         Expanded(
                           child: ListView.builder(
                             itemCount: _questions[_currentQuestionIndex]
@@ -383,84 +341,63 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                             itemBuilder: (context, index) {
                               final answer = _questions[_currentQuestionIndex]
                                   ['answers'][index];
-                              final bool isCorrect = answer['isCorrect'];
-
-                              // Determine option style based on selection state
-                              Color bgColor = Colors.grey[850]!;
-                              Color borderColor = Colors.grey[700]!;
-
-                              if (_optionSelected) {
-                                if (index == _selectedOptionIndex) {
-                                  // Selected option
-                                  bgColor = isCorrect
-                                      ? Colors.green.withOpacity(0.3)
-                                      : Colors.red.withOpacity(0.3);
-                                  borderColor =
-                                      isCorrect ? Colors.green : Colors.red;
-                                } else if (isCorrect) {
-                                  // Correct answer (show after selection)
-                                  bgColor = Colors.green.withOpacity(0.2);
-                                  borderColor = Colors.green.withOpacity(0.5);
-                                }
-                              }
-
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
-                                child: _buildAnswerOption(
-                                  answer,
-                                  index,
-                                  bgColor,
-                                  borderColor,
-                                ),
+                                child: _buildAnswerOption(answer, index),
                               );
                             },
                           ),
                         ),
 
                         // Navigation buttons
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: _currentQuestionIndex > 0
-                                    ? _previousQuestion
-                                    : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[800],
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ElevatedButton(
+                              onPressed: _currentQuestionIndex > 0
+                                  ? _previousQuestion
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey[800],
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24.0),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                icon: const Icon(Icons.arrow_back, size: 16),
-                                label: const Text('PREVIOUS'),
                               ),
-                              ElevatedButton.icon(
-                                onPressed: (_currentQuestionIndex <
-                                            _questions.length - 1) &&
-                                        (_optionSelected ||
-                                            _selectedAnswerIndices[
-                                                    _currentQuestionIndex] !=
-                                                -1)
-                                    ? _nextQuestion
-                                    : null,
+                              child: const Text('Previous'),
+                            ),
+                            if (_currentQuestionIndex < _questions.length - 1)
+                              ElevatedButton(
+                                onPressed:
+                                    _optionSelected ? _nextQuestion : null,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.cyanAccent,
                                   foregroundColor: Colors.black,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
+                                      horizontal: 24.0),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                icon: const Icon(Icons.arrow_forward, size: 16),
-                                label: const Text('NEXT'),
+                                child: const Text('Next'),
+                              )
+                            else
+                              ElevatedButton(
+                                onPressed:
+                                    _optionSelected ? _showQuizReport : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.greenAccent,
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24.0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('View Results'),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -469,15 +406,34 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
     );
   }
 
-  Widget _buildAnswerOption(Map<String, dynamic> answer, int index,
-      Color bgColor, Color borderColor) {
+  Widget _buildAnswerOption(Map<String, dynamic> answer, int index) {
+    final bool isSelected = _selectedOptionIndex == index;
+    final bool isCorrect = answer['isCorrect'];
+    final bool showResult = _optionSelected;
+
+    // Determine container color based on selection and correctness
+    Color containerColor = Colors.grey[850]!;
+    Color borderColor = Colors.grey[700]!;
+
+    if (showResult && isSelected) {
+      // If this option was selected
+      containerColor = isCorrect
+          ? Colors.green.withOpacity(0.2)
+          : Colors.red.withOpacity(0.2);
+      borderColor = isCorrect ? Colors.green : Colors.red;
+    } else if (showResult && isCorrect) {
+      // Always highlight the correct answer when any option is selected
+      containerColor = Colors.green.withOpacity(0.1);
+      borderColor = Colors.green.withOpacity(0.5);
+    }
+
     return Container(
       decoration: BoxDecoration(
-        color: bgColor,
+        color: containerColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: borderColor,
-          width: 1.5,
+          width: isSelected ? 2 : 1,
         ),
       ),
       child: InkWell(
@@ -491,37 +447,27 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: _optionSelected &&
-                          (index == _selectedOptionIndex || answer['isCorrect'])
-                      ? (answer['isCorrect'] ? Colors.green : Colors.red)
+                  color: showResult && isSelected
+                      ? (isCorrect ? Colors.green : Colors.red)
                       : Colors.grey[800],
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: _optionSelected &&
-                            (index == _selectedOptionIndex ||
-                                answer['isCorrect'])
-                        ? (answer['isCorrect']
-                            ? Colors.green[300]!
-                            : Colors.red[300]!)
+                    color: showResult && isSelected
+                        ? (isCorrect ? Colors.green : Colors.red)
                         : Colors.grey[600]!,
                     width: 1,
                   ),
                 ),
                 child: Center(
-                  child: _optionSelected &&
-                          (index == _selectedOptionIndex || answer['isCorrect'])
-                      ? Icon(
-                          answer['isCorrect'] ? Icons.check : Icons.close,
-                          color: Colors.white,
-                          size: 18,
-                        )
-                      : Text(
-                          String.fromCharCode(65 + index), // A, B, C, D, E
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  child: Text(
+                    String.fromCharCode(65 + index), // A, B, C, D, E
+                    style: TextStyle(
+                      color: showResult && isSelected && !isCorrect
+                          ? Colors.white
+                          : Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -534,6 +480,16 @@ class _InterviewInterfaceScreenState extends State<InterviewInterfaceScreen> {
                   ),
                 ),
               ),
+              if (showResult && isCorrect)
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                ),
+              if (showResult && isSelected && !isCorrect)
+                const Icon(
+                  Icons.cancel,
+                  color: Colors.red,
+                ),
             ],
           ),
         ),

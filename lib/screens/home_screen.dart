@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../Feature_pages/Ai_mock_interview.dart';
+import '../Feature_pages/AI_mock_interview_screen.dart';
 import '../Feature_pages/Quiz_screen.dart';
 import '../Feature_pages/resume_analyser.dart';
 import '../Feature_pages/summary_generator.dart';
@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      screen: const AiMockInterview(),
+      screen: const AIMockInterviewScreen(),
     ),
     FeatureCard(
       title: 'Resume Analyzer',

@@ -64,7 +64,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
           _selectedFile = File(result.files.single.path!);
           _fileName = result.files.single.name;
           _hasAnalysis = false;
-          // Reset analysis data when new file is selected
+          // Reset analy  sis data when new file is selected
           _overallScore = 0.0;
           _issues = [];
           _recommendations = [];

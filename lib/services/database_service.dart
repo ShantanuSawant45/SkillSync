@@ -92,11 +92,7 @@ class DatabaseService {
         'What is the difference between StatelessWidget and StatefulWidget?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text':
-            'StatelessWidget cannot change its state during the lifetime of the widget, while StatefulWidget can.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'StatelessWidget is faster than StatefulWidget.',
             'isCorrect': false,
@@ -104,6 +100,11 @@ class DatabaseService {
           {
             'text': 'StatefulWidget cannot be updated.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'StatelessWidget cannot change its state during the lifetime of the widget, while StatefulWidget can.',
+            'isCorrect': true,
           },
           {
             'text': 'StatelessWidget uses more memory than StatefulWidget.',
@@ -175,11 +176,7 @@ class DatabaseService {
         'question': 'What is the Flutter widget tree?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text':
-            'A hierarchical structure of widgets that describes the user interface of the application.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'A data structure that stores widget performance metrics.',
             'isCorrect': false,
@@ -191,6 +188,11 @@ class DatabaseService {
           {
             'text': 'A file that contains all the widgets used in an app.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'A hierarchical structure of widgets that describes the user interface of the application.',
+            'isCorrect': true,
           },
           {
             'text': 'A database of pre-built Flutter widgets.',
@@ -258,14 +260,15 @@ class DatabaseService {
         'question': 'What is the difference between "main axis" and "cross axis" in Flutter layouts?',
         'difficulty': 'medium',
         'answers': [
+
+          {
+            'text': 'They are different names for the same concept.',
+            'isCorrect': false,
+          },
           {
             'text':
             'In a Row, the main axis is horizontal and the cross axis is vertical. In a Column, the main axis is vertical and the cross axis is horizontal.',
             'isCorrect': true,
-          },
-          {
-            'text': 'They are different names for the same concept.',
-            'isCorrect': false,
           },
           {
             'text': 'Main axis is always horizontal and cross axis is always vertical.',
@@ -285,11 +288,7 @@ class DatabaseService {
         'question': 'What is the purpose of the "Future" class in Dart/Flutter?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text':
-            'It represents a potential value or error that will be available at some time in the future, used for asynchronous operations.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'It is used to schedule UI updates at specific times.',
             'isCorrect': false,
@@ -306,17 +305,18 @@ class DatabaseService {
             'text': 'It is used to define animations that will play in the future.',
             'isCorrect': false,
           },
+          {
+            'text':
+            'It represents a potential value or error that will be available at some time in the future, used for asynchronous operations.',
+            'isCorrect': true,
+          },
         ],
       },
       {
         'question': 'What is Flutter\'s "Provider" package used for?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text':
-            'It\'s a state management solution that uses the InheritedWidget to make it easier to pass data down the widget tree.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'It\'s used to provide internet connectivity to Flutter apps.',
             'isCorrect': false,
@@ -324,6 +324,11 @@ class DatabaseService {
           {
             'text': 'It\'s used to provide access to hardware features like camera and GPS.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'It\'s a state management solution that uses the InheritedWidget to make it easier to pass data down the widget tree.',
+            'isCorrect': true,
           },
           {
             'text': 'It\'s used to provide pre-built UI components.',
@@ -339,11 +344,7 @@ class DatabaseService {
         'question': 'What is the purpose of the "Keys" in Flutter widgets?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text':
-            'Keys help Flutter identify widgets uniquely when they move around in the widget tree, especially in lists or collections of widgets.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Keys are used to encrypt data within Flutter applications.',
             'isCorrect': false,
@@ -351,6 +352,11 @@ class DatabaseService {
           {
             'text': 'Keys are used to lock specific widgets to prevent updates.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'Keys help Flutter identify widgets uniquely when they move around in the widget tree, especially in lists or collections of widgets.',
+            'isCorrect': true,
           },
           {
             'text': 'Keys are used only for authentication purposes.',
@@ -373,14 +379,15 @@ class DatabaseService {
         'question': 'What is React.js?',
         'difficulty': 'easy',
         'answers': [
+
+          {
+            'text': 'A programming language developed by Facebook.',
+            'isCorrect': false,
+          },
           {
             'text':
             'A JavaScript library for building user interfaces, particularly single-page applications.',
             'isCorrect': true,
-          },
-          {
-            'text': 'A programming language developed by Facebook.',
-            'isCorrect': false,
           },
           {
             'text': 'A database management system.',
@@ -400,11 +407,7 @@ class DatabaseService {
         'question': 'What is JSX in React?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text':
-            'JSX is a syntax extension for JavaScript that looks similar to HTML and allows us to write HTML in React.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'JSX is a JavaScript compiler.',
             'isCorrect': false,
@@ -418,6 +421,11 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text':
+            'JSX is a syntax extension for JavaScript that looks similar to HTML and allows us to write HTML in React.',
+            'isCorrect': true,
+          },
+          {
             'text': 'JSX is a testing framework for React components.',
             'isCorrect': false,
           },
@@ -427,11 +435,7 @@ class DatabaseService {
         'question': 'What is the purpose of state in React?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text':
-            'State is an object that contains data or information about the component that can change over time.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'State is used only for storing user input in forms.',
             'isCorrect': false,
@@ -445,6 +449,11 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text':
+            'State is an object that contains data or information about the component that can change over time.',
+            'isCorrect': true,
+          },
+          {
             'text': 'State is used to define the structure of a component.',
             'isCorrect': false,
           },
@@ -454,11 +463,7 @@ class DatabaseService {
         'question': 'What are props in React?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text':
-            'Props are read-only data that are passed from a parent component to a child component.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Props are functions used to update the state of a component.',
             'isCorrect': false,
@@ -474,6 +479,11 @@ class DatabaseService {
           {
             'text': 'Props are event handlers in React.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'Props are read-only data that are passed from a parent component to a child component.',
+            'isCorrect': true,
           },
         ],
       },
@@ -508,11 +518,7 @@ class DatabaseService {
         'question': 'What is the purpose of the useEffect hook in React?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text':
-            'useEffect allows you to perform side effects in function components, similar to lifecycle methods in class components.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'useEffect is used only for API calls in React.',
             'isCorrect': false,
@@ -520,6 +526,11 @@ class DatabaseService {
           {
             'text': 'useEffect is used to create visual effects and animations.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'useEffect allows you to perform side effects in function components, similar to lifecycle methods in class components.',
+            'isCorrect': true,
           },
           {
             'text': 'useEffect is a replacement for React state.',
@@ -562,11 +573,7 @@ class DatabaseService {
         'question': 'What are controlled components in React?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text':
-            'Form elements that are controlled by React state, where the form\'s data is handled by the component rather than the DOM.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Components that cannot be modified by users.',
             'isCorrect': false,
@@ -580,6 +587,11 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text':
+            'Form elements that are controlled by React state, where the form\'s data is handled by the component rather than the DOM.',
+            'isCorrect': true,
+          },
+          {
             'text': 'Components that are tested and verified by React\'s control system.',
             'isCorrect': false,
           },
@@ -589,11 +601,7 @@ class DatabaseService {
         'question': 'What is the significance of keys in React lists?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text':
-            'Keys help React identify which items have changed, are added, or are removed, which helps in efficient update of the user interface.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Keys are used to style individual list items differently.',
             'isCorrect': false,
@@ -610,17 +618,18 @@ class DatabaseService {
             'text': 'Keys are used to encrypt data in React applications.',
             'isCorrect': false,
           },
+          {
+            'text':
+            'Keys help React identify which items have changed, are added, or are removed, which helps in efficient update of the user interface.',
+            'isCorrect': true,
+          },
         ],
       },
       {
         'question': 'What is Redux and how does it relate to React?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text':
-            'Redux is a state management library that can be used with React to manage the application\'s state in a predictable way.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Redux is a replacement for React that offers better performance.',
             'isCorrect': false,
@@ -632,6 +641,11 @@ class DatabaseService {
           {
             'text': 'Redux is a CSS framework created by the React team.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'Redux is a state management library that can be used with React to manage the application\'s state in a predictable way.',
+            'isCorrect': true,
           },
           {
             'text': 'Redux is a compiler that converts React code into optimized JavaScript.',
@@ -651,11 +665,7 @@ class DatabaseService {
         'Given an array of integers, find two numbers such that they add up to a specific target.',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text':
-            'Use a hash map to store values and check for the complement of each number.',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Sort the array and use binary search.',
             'isCorrect': false,
@@ -663,6 +673,11 @@ class DatabaseService {
           {
             'text': 'Use nested loops to check all pairs.',
             'isCorrect': false,
+          },
+          {
+            'text':
+            'Use a hash map to store values and check for the complement of each number.',
+            'isCorrect': true,
           },
           {
             'text': 'This problem cannot be solved in less than O(n²) time.',
@@ -679,13 +694,14 @@ class DatabaseService {
         'What is the time complexity of quicksort in the worst case?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'O(n²)',
-            'isCorrect': true,
-          },
+
           {
             'text': 'O(n log n)',
             'isCorrect': false,
+          },
+          {
+            'text': 'O(n²)',
+            'isCorrect': true,
           },
           {
             'text': 'O(n)',
@@ -707,10 +723,7 @@ class DatabaseService {
         'What is the most efficient way to detect a cycle in a linked list?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text': 'Floyd\'s Cycle-Finding Algorithm (Tortoise and Hare)',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Use a hash set to track visited nodes',
             'isCorrect': false,
@@ -722,6 +735,10 @@ class DatabaseService {
           {
             'text': 'Count the total number of nodes first',
             'isCorrect': false,
+          },
+          {
+            'text': 'Floyd\'s Cycle-Finding Algorithm (Tortoise and Hare)',
+            'isCorrect': true,
           },
           {
             'text': 'Mark visited nodes by modifying their values',
@@ -761,10 +778,7 @@ class DatabaseService {
         'What data structure would you use to implement an LRU (Least Recently Used) cache?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text': 'Hashmap + Doubly linked list',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Binary search tree',
             'isCorrect': false,
@@ -781,6 +795,10 @@ class DatabaseService {
             'text': 'Array',
             'isCorrect': false,
           },
+          {
+            'text': 'Hashmap + Doubly linked list',
+            'isCorrect': true,
+          },
         ],
       },
       {
@@ -788,10 +806,7 @@ class DatabaseService {
         'How would you find all anagrams of a string?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'Use a frequency counter/histogram of characters',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Generate all permutations and check each one',
             'isCorrect': false,
@@ -805,6 +820,10 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text': 'Use a frequency counter/histogram of characters',
+            'isCorrect': true,
+          },
+          {
             'text': 'Regular expressions',
             'isCorrect': false,
           },
@@ -815,13 +834,14 @@ class DatabaseService {
         'What is the difference between process and thread?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'A process is an independent program with its own memory space, while threads share memory within the same process',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Processes are faster than threads because they have less overhead',
             'isCorrect': false,
+          },
+          {
+            'text': 'A process is an independent program with its own memory space, while threads share memory within the same process',
+            'isCorrect': true,
           },
           {
             'text': 'Threads cannot communicate with each other, but processes can',
@@ -847,13 +867,14 @@ class DatabaseService {
         'What is the primary purpose of Express.js in the MERN stack?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'To create server-side web applications and APIs',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To manage the front-end UI components',
             'isCorrect': false,
+          },
+          {
+            'text': 'To create server-side web applications and APIs',
+            'isCorrect': true,
           },
           {
             'text': 'To provide database functionality',
@@ -928,10 +949,7 @@ class DatabaseService {
         'Which Node.js module is commonly used for environment variables in a MERN application?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'dotenv',
-            'isCorrect': true,
-          },
+
           {
             'text': 'envconfig',
             'isCorrect': false,
@@ -939,6 +957,10 @@ class DatabaseService {
           {
             'text': 'process-env',
             'isCorrect': false,
+          },
+          {
+            'text': 'dotenv',
+            'isCorrect': true,
           },
           {
             'text': 'node-config',
@@ -955,10 +977,7 @@ class DatabaseService {
         'What is the correct way to handle CORS issues in a MERN stack application?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'Use the cors middleware in Express',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Disable browser security settings',
             'isCorrect': false,
@@ -966,6 +985,10 @@ class DatabaseService {
           {
             'text': 'Use only relative URLs in API requests',
             'isCorrect': false,
+          },
+          {
+            'text': 'Use the cors middleware in Express',
+            'isCorrect': true,
           },
           {
             'text': 'Always serve the React app from the same origin as the API',
@@ -982,10 +1005,7 @@ class DatabaseService {
         'What is the purpose of JWT (JSON Web Tokens) in a MERN stack application?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'To securely transmit information between parties as a JSON object',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To format database queries',
             'isCorrect': false,
@@ -999,6 +1019,10 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text': 'To securely transmit information between parties as a JSON object',
+            'isCorrect': true,
+          },
+          {
             'text': 'To validate MongoDB schemas',
             'isCorrect': false,
           },
@@ -1009,10 +1033,7 @@ class DatabaseService {
         'In MongoDB, how do you create a reference relationship between documents?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text': 'Store the ObjectId of one document in another document',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Use JOIN statements like in SQL',
             'isCorrect': false,
@@ -1029,6 +1050,10 @@ class DatabaseService {
             'text': 'MongoDB cannot create relationships between documents',
             'isCorrect': false,
           },
+          {
+            'text': 'Store the ObjectId of one document in another document',
+            'isCorrect': true,
+          },
         ],
       },
       {
@@ -1036,13 +1061,14 @@ class DatabaseService {
         'What is the primary advantage of using React\'s virtual DOM?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'It minimizes direct DOM manipulation for better performance',
-            'isCorrect': true,
-          },
+
           {
             'text': 'It provides server-side rendering capabilities',
             'isCorrect': false,
+          },
+          {
+            'text': 'It minimizes direct DOM manipulation for better performance',
+            'isCorrect': true,
           },
           {
             'text': 'It allows direct access to browser APIs',
@@ -1063,10 +1089,7 @@ class DatabaseService {
         'What is the purpose of Mongoose in a MERN stack application?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'To provide schema-based modeling for MongoDB',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To handle API routing in Express',
             'isCorrect': false,
@@ -1080,6 +1103,10 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text': 'To provide schema-based modeling for MongoDB',
+            'isCorrect': true,
+          },
+          {
             'text': 'To provide user authentication',
             'isCorrect': false,
           },
@@ -1090,10 +1117,7 @@ class DatabaseService {
         'What is the main difference between server-side rendering and client-side rendering in a MERN stack application?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text': 'Server-side rendering generates HTML on the server, while client-side rendering generates HTML in the browser',
-            'isCorrect': true,
-          },
+
           {
             'text': 'Server-side rendering uses React while client-side rendering uses Angular',
             'isCorrect': false,
@@ -1101,6 +1125,10 @@ class DatabaseService {
           {
             'text': 'Server-side rendering is slower than client-side rendering',
             'isCorrect': false,
+          },
+          {
+            'text': 'Server-side rendering generates HTML on the server, while client-side rendering generates HTML in the browser',
+            'isCorrect': true,
           },
           {
             'text': 'Server-side rendering cannot work with APIs',
@@ -1121,14 +1149,16 @@ class DatabaseService {
         'What is the primary difference between MEAN stack and MERN stack?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'MEAN uses Angular for frontend, while MERN uses React',
-            'isCorrect': true,
-          },
+
           {
             'text': 'MEAN uses MySQL, while MERN uses MongoDB',
             'isCorrect': false,
           },
+          {
+            'text': 'MEAN uses Angular for frontend, while MERN uses React',
+            'isCorrect': true,
+          },
+
           {
             'text': 'MEAN uses Express.js, while MERN uses Koa.js',
             'isCorrect': false,
@@ -1148,10 +1178,7 @@ class DatabaseService {
         'Which language is Angular primarily written in?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'TypeScript',
-            'isCorrect': true,
-          },
+
           {
             'text': 'JavaScript',
             'isCorrect': false,
@@ -1159,6 +1186,10 @@ class DatabaseService {
           {
             'text': 'Java',
             'isCorrect': false,
+          },
+          {
+            'text': 'TypeScript',
+            'isCorrect': true,
           },
           {
             'text': 'Python',
@@ -1175,10 +1206,7 @@ class DatabaseService {
         'What is the purpose of Angular services?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'To share data and functionality across components',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To handle HTTP requests exclusively',
             'isCorrect': false,
@@ -1194,6 +1222,10 @@ class DatabaseService {
           {
             'text': 'To connect directly to MongoDB',
             'isCorrect': false,
+          },
+          {
+            'text': 'To share data and functionality across components',
+            'isCorrect': true,
           },
         ],
       },
@@ -1229,10 +1261,7 @@ class DatabaseService {
         'What is the purpose of Angular\'s NgModule?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'To organize the application into cohesive blocks of functionality',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To connect to external APIs',
             'isCorrect': false,
@@ -1240,6 +1269,10 @@ class DatabaseService {
           {
             'text': 'To manage database operations',
             'isCorrect': false,
+          },
+          {
+            'text': 'To organize the application into cohesive blocks of functionality',
+            'isCorrect': true,
           },
           {
             'text': 'To replace traditional HTML elements',
@@ -1256,10 +1289,7 @@ class DatabaseService {
         'What is the Angular CLI used for?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'To automate the development workflow with commands for creating, building, and testing Angular applications',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To connect Angular with MongoDB directly',
             'isCorrect': false,
@@ -1273,6 +1303,10 @@ class DatabaseService {
             'isCorrect': false,
           },
           {
+            'text': 'To automate the development workflow with commands for creating, building, and testing Angular applications',
+            'isCorrect': true,
+          },
+          {
             'text': 'To host the application on a production server',
             'isCorrect': false,
           },
@@ -1283,10 +1317,7 @@ class DatabaseService {
         'How does Angular handle dependency injection?',
         'difficulty': 'hard',
         'answers': [
-          {
-            'text': 'Through its built-in DI system that provides dependencies to components through constructors',
-            'isCorrect': true,
-          },
+
           {
             'text': 'By requiring manual imports in every file',
             'isCorrect': false,
@@ -1294,6 +1325,10 @@ class DatabaseService {
           {
             'text': 'By using global variables',
             'isCorrect': false,
+          },
+          {
+            'text': 'Through its built-in DI system that provides dependencies to components through constructors',
+            'isCorrect': true,
           },
           {
             'text': 'Through the express.js middleware system',
@@ -1310,10 +1345,7 @@ class DatabaseService {
         'What is an Angular directive?',
         'difficulty': 'medium',
         'answers': [
-          {
-            'text': 'A class that adds behavior to elements in the DOM',
-            'isCorrect': true,
-          },
+
           {
             'text': 'A database query helper',
             'isCorrect': false,
@@ -1325,6 +1357,10 @@ class DatabaseService {
           {
             'text': 'A MongoDB collection',
             'isCorrect': false,
+          },
+          {
+            'text': 'A class that adds behavior to elements in the DOM',
+            'isCorrect': true,
           },
           {
             'text': 'A special CSS selector',
@@ -1364,13 +1400,14 @@ class DatabaseService {
         'What is the purpose of Angular\'s HttpClient module?',
         'difficulty': 'easy',
         'answers': [
-          {
-            'text': 'To perform HTTP requests to remote servers and handle responses',
-            'isCorrect': true,
-          },
+
           {
             'text': 'To create server-side code',
             'isCorrect': false,
+          },
+          {
+            'text': 'To perform HTTP requests to remote servers and handle responses',
+            'isCorrect': true,
           },
           {
             'text': 'To manage local storage',
@@ -2774,6 +2811,7 @@ class DatabaseService {
             'text': 'Supervised learning requires more computing power than unsupervised learning',
             'isCorrect': false,
           },
+
           {
             'text': 'Unsupervised learning always performs better than supervised learning',
             'isCorrect': false,

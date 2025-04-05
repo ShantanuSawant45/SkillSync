@@ -19,11 +19,19 @@ class _AIInterviewInterfaceScreenState
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   String _transcribedText = '';
+
+  // Gemini API
+  late final GenerativeModel _model;
+  final apiKey = 'AIzaSyAFgcyNMpAv_EHuqjmRD2Z349xHW286kYk';
+
+  // Interview state
   String _currentQuestion = '';
   String _currentFeedback = '';
   bool _isLoading = true;
   bool _isProcessing = false;
   bool _interviewStarted = false;
+  int _currentQuestionNumber = 1;
+  final int _totalQuestions = 7;
   List<Map<String, String>> _interviewHistory = [];
 
   // Scroll controller for chat history
@@ -32,6 +40,7 @@ class _AIInterviewInterfaceScreenState
   @override
   void initState() {
     super.initState();
+    _initializeGeminiAPI();
     _initializeSpeechRecognition();
     _startInterview();
   }
@@ -40,6 +49,13 @@ class _AIInterviewInterfaceScreenState
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _initializeGeminiAPI() {
+    _model = GenerativeModel(
+      model: 'gemini-pro',
+      apiKey: apiKey,
+    );
   }
 
   Future<void> _initializeSpeechRecognition() async {
@@ -60,12 +76,14 @@ class _AIInterviewInterfaceScreenState
           });
 
           // Show error snackbar
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error with speech recognition: $error'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error with speech recognition: $error'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         },
       );
 
@@ -86,7 +104,6 @@ class _AIInterviewInterfaceScreenState
     }
   }
 
-  // Mock implementation - would be replaced with actual Gemini API call
   Future<void> _startInterview() async {
     setState(() {
       _isLoading = true;
@@ -94,8 +111,8 @@ class _AIInterviewInterfaceScreenState
     });
 
     try {
-      // This would be replaced with actual API call
-      String firstQuestion = await _generateInterviewQuestion('');
+      // Make initial API call to get first question
+      String firstQuestion = await _generateInterviewQuestion();
 
       setState(() {
         _currentQuestion = firstQuestion;
@@ -125,54 +142,53 @@ class _AIInterviewInterfaceScreenState
     }
   }
 
-  Future<String> _generateInterviewQuestion(String previousAnswer) async {
-    // In a real implementation, this would call the Gemini API
-    // For now, we're mocking it with some sample questions based on category
+  Future<String> _generateInterviewQuestion() async {
+    try {
+      final prompt = '''
+You are conducting a technical interview for ${widget.category}.
+Generate a relevant technical interview question (question #$_currentQuestionNumber out of $_totalQuestions).
+The question should be challenging but appropriate for an interview setting.
+Provide just the question without any additional text or context.
+''';
 
-    // This is just a placeholder, you would replace this with the actual API call
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
+      final content = [Content.text(prompt)];
+      final response = await _model.generateContent(content);
 
-    // For demonstration, return a context-relevant question
-    if (widget.category.contains('Flutter')) {
-      if (previousAnswer.isEmpty) {
-        return "What experience do you have with Flutter state management, and which approach do you prefer?";
-      } else {
-        return "Can you explain the difference between StatelessWidget and StatefulWidget, and when you would use each?";
-      }
-    } else if (widget.category.contains('React')) {
-      if (previousAnswer.isEmpty) {
-        return "Could you explain the React component lifecycle and hooks?";
-      } else {
-        return "What's your experience with state management in React applications?";
-      }
-    } else if (widget.category.contains('Google')) {
-      if (previousAnswer.isEmpty) {
-        return "Can you walk me through a difficult technical problem you've solved recently?";
-      } else {
-        return "How would you design a system that scales to handle a million concurrent users?";
-      }
-    } else {
-      if (previousAnswer.isEmpty) {
-        return "Tell me about your experience with ${widget.category}. What projects have you worked on?";
-      } else {
-        return "What are the most challenging aspects of ${widget.category} in your opinion?";
-      }
+      String questionText = response.text?.trim() ??
+          "What experience do you have with ${widget.category}?";
+
+      return questionText;
+    } catch (e) {
+      print('Error generating question: $e');
+      return "What are your experiences with ${widget.category}?";
     }
   }
 
-  Future<String> _generateFeedback(String answer, String question) async {
-    // In a real implementation, this would call the Gemini API
-    // For now, we're mocking it with some generic feedback
+  Future<String> _generateFeedback(String answer) async {
+    try {
+      final prompt = '''
+You are conducting a technical interview for ${widget.category}.
+The candidate was asked: $_currentQuestion
+The candidate's answer was: $answer
 
-    // This is just a placeholder, you would replace this with the actual API call
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
+Provide a brief but constructive feedback on this answer addressing:
+1. Strengths of the answer
+2. Areas that could be improved
+3. A brief suggestion to enhance the answer
 
-    if (answer.length < 30) {
-      return "Your answer was quite brief. Consider providing more details and examples from your experience to demonstrate your knowledge.";
-    } else if (answer.contains("example") || answer.contains("experience")) {
-      return "Good job providing specific examples! This helps interviewers understand your practical experience. You could further strengthen your answer by discussing the outcomes or results.";
-    } else {
-      return "Your answer shows some knowledge of the topic. To improve, try to be more specific with examples from your experience and explain how you've applied these concepts in real projects.";
+Keep the feedback concise, professional and constructive.
+''';
+
+      final content = [Content.text(prompt)];
+      final response = await _model.generateContent(content);
+
+      String feedbackText = response.text?.trim() ??
+          "Your answer shows some understanding, but try to provide more specific examples next time.";
+
+      return feedbackText;
+    } catch (e) {
+      print('Error generating feedback: $e');
+      return "Thank you for your answer. Try to provide more specific examples and details in your future responses.";
     }
   }
 
@@ -194,7 +210,7 @@ class _AIInterviewInterfaceScreenState
 
     try {
       // Generate feedback based on the answer
-      String feedback = await _generateFeedback(answer, _currentQuestion);
+      String feedback = await _generateFeedback(answer);
 
       setState(() {
         _currentFeedback = feedback;
@@ -207,20 +223,34 @@ class _AIInterviewInterfaceScreenState
       // Scroll to show feedback
       _scrollToBottom();
 
-      // Generate next question
-      String nextQuestion = await _generateInterviewQuestion(answer);
+      // Check if we've reached the maximum number of questions
+      if (_currentQuestionNumber < _totalQuestions) {
+        // Increment question number and generate next question
+        _currentQuestionNumber++;
+        String nextQuestion = await _generateInterviewQuestion();
 
-      setState(() {
-        _currentQuestion = nextQuestion;
-        _transcribedText = '';
-        _isProcessing = false;
-        _interviewHistory.add({
-          'role': 'interviewer',
-          'content': nextQuestion,
+        setState(() {
+          _currentQuestion = nextQuestion;
+          _transcribedText = '';
+          _isProcessing = false;
+          _interviewHistory.add({
+            'role': 'interviewer',
+            'content': nextQuestion,
+          });
         });
-      });
+      } else {
+        // Interview is complete
+        setState(() {
+          _isProcessing = false;
+          _interviewHistory.add({
+            'role': 'interviewer',
+            'content':
+                'Thank you for completing the interview! I hope the feedback has been helpful.',
+          });
+        });
+      }
 
-      // Scroll to bottom to show new question
+      // Scroll to bottom to show new content
       _scrollToBottom();
     } catch (e) {
       setState(() {
@@ -253,7 +283,7 @@ class _AIInterviewInterfaceScreenState
               _transcribedText = result.recognizedWords;
             });
           },
-          listenFor: const Duration(seconds: 30),
+          listenFor: const Duration(seconds: 60),
           pauseFor: const Duration(seconds: 3),
           partialResults: true,
           localeId: 'en_US',
@@ -373,7 +403,7 @@ class _AIInterviewInterfaceScreenState
                       ),
                     ),
                     child: Text(
-                      'AI Interview',
+                      'Question $_currentQuestionNumber/$_totalQuestions',
                       style: TextStyle(
                         color: Colors.purpleAccent[100],
                         fontWeight: FontWeight.bold,

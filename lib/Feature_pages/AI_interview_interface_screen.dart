@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AIInterviewInterfaceScreen extends StatefulWidget {
   final String category;
@@ -23,6 +25,8 @@ class _AIInterviewInterfaceScreenState
   // Gemini API
   late final GenerativeModel _model;
   final apiKey = 'AIzaSyAFgcyNMpAv_EHuqjmRD2Z349xHW286kYk';
+  final apiBaseUrl =
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
 
   // Interview state
   String _currentQuestion = '';
@@ -151,13 +155,41 @@ The question should be challenging but appropriate for an interview setting.
 Provide just the question without any additional text or context.
 ''';
 
-      final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl?key=$apiKey'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt}
+              ]
+            }
+          ],
+          'generationConfig': {
+            'temperature': 0.7,
+            'topK': 40,
+            'topP': 0.95,
+            'maxOutputTokens': 1024,
+          },
+        }),
+      );
 
-      String questionText = response.text?.trim() ??
-          "What experience do you have with ${widget.category}?";
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        String questionText = jsonResponse['candidates'][0]['content']['parts']
+                    [0]['text']
+                ?.trim() ??
+            "What experience do you have with ${widget.category}?";
 
-      return questionText;
+        return questionText;
+      } else {
+        print(
+            'Error from Gemini API: ${response.statusCode}, ${response.body}');
+        return "What are your experiences with ${widget.category}?";
+      }
     } catch (e) {
       print('Error generating question: $e');
       return "What are your experiences with ${widget.category}?";
@@ -179,13 +211,41 @@ Provide a brief but constructive feedback on this answer addressing:
 Keep the feedback concise, professional and constructive.
 ''';
 
-      final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl?key=$apiKey'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt}
+              ]
+            }
+          ],
+          'generationConfig': {
+            'temperature': 0.7,
+            'topK': 40,
+            'topP': 0.95,
+            'maxOutputTokens': 1024,
+          },
+        }),
+      );
 
-      String feedbackText = response.text?.trim() ??
-          "Your answer shows some understanding, but try to provide more specific examples next time.";
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        String feedbackText = jsonResponse['candidates'][0]['content']['parts']
+                    [0]['text']
+                ?.trim() ??
+            "Your answer shows some understanding, but try to provide more specific examples next time.";
 
-      return feedbackText;
+        return feedbackText;
+      } else {
+        print(
+            'Error from Gemini API: ${response.statusCode}, ${response.body}');
+        return "Thank you for your answer. Try to provide more specific examples and details in your future responses.";
+      }
     } catch (e) {
       print('Error generating feedback: $e');
       return "Thank you for your answer. Try to provide more specific examples and details in your future responses.";

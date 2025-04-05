@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+
 class ResumeAnalyser extends StatefulWidget {
   const ResumeAnalyser({super.key});
 
@@ -18,8 +19,18 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
   File? _selectedFile;
   String _fileName = '';
   bool _isLoading = false;
-  String _analysisResult = '';
   bool _hasAnalysis = false;
+
+  // New variables for structured response
+  double _overallScore = 0.0;
+  List<String> _issues = [];
+  List<String> _recommendations = [];
+  Map<String, dynamic> _skillsAnalysis = {};
+  Map<String, dynamic> _atsAnalysis = {};
+  Map<String, dynamic> _experienceAnalysis = {};
+  Map<String, dynamic> _formattingAnalysis = {};
+  String _analysisDate = '';
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -53,7 +64,15 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
           _selectedFile = File(result.files.single.path!);
           _fileName = result.files.single.name;
           _hasAnalysis = false;
-          _analysisResult = '';
+          // Reset analysis data when new file is selected
+          _overallScore = 0.0;
+          _issues = [];
+          _recommendations = [];
+          _skillsAnalysis = {};
+          _atsAnalysis = {};
+          _experienceAnalysis = {};
+          _formattingAnalysis = {};
+          _analysisDate = '';
         });
         _animationController.reset();
         _animationController.forward();
@@ -81,35 +100,28 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
 
     setState(() {
       _isLoading = true;
+      // Reset all analysis variables
+      _overallScore = 0.0;
+      _issues = [];
+      _recommendations = [];
+      _skillsAnalysis = {};
+      _atsAnalysis = {};
+      _experienceAnalysis = {};
+      _formattingAnalysis = {};
+      _analysisDate = '';
+      _hasAnalysis = false;
     });
 
     try {
-      // ===== IMPORTANT: SERVER CONFIGURATION =====
-      // Try the following IP addresses based on your setup:
-
-      // 1. For local testing on same network (replace with your Flask server's actual IP):
       const String baseUrl = "http://192.168.154.14:5000/analyze";
-
-      // 2. For Android emulator pointing to your computer's localhost:
-      // const String baseUrl = "http://10.0.2.2:5000/analyze";
-
-      // 3. For localhost if Flask is running on the same device:
-      // const String baseUrl = "http://127.0.0.1:5000/analyze";
-
-      // Create multipart request with timeout
       final request = http.MultipartRequest('POST', Uri.parse(baseUrl));
-
-      // Add timeout for connection issues
-      request.headers['connection-timeout'] = '15000'; // 15 seconds timeout
-
-      // Add the file to the request with parameter name 'file' as expected by the Flask API
+      request.headers['connection-timeout'] = '15000';
       request.files.add(await http.MultipartFile.fromPath(
-        'file', // The parameter name must be 'file' as specified in the Flask app
+        'file',
         _selectedFile!.path,
         filename: _fileName,
       ));
 
-      // Show connecting status
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -119,7 +131,6 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
         );
       }
 
-      // Send the request
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 15),
         onTimeout: () {
@@ -128,72 +139,70 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
         },
       );
 
-      // Get the response
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        // Parse response data
         final Map<String, dynamic> result = jsonDecode(response.body);
 
-        // Check if the request was successful based on the API response structure
         if (result['status'] == 'success') {
-          // Extract the data from the API response
           final data = result['data'];
 
           setState(() {
             _isLoading = false;
             _hasAnalysis = true;
+            _analysisDate = result['analysis_date'] ?? '';
 
-            // Format the response based on the structure from the ResumeAnalyzer class
-            // This might need adjustment based on the exact structure returned by your analyzer
-            final skills = data['skills'] ?? [];
-            final recommendations = data['recommendations'] ?? [];
-            final matchScore = data['match_score'] ?? 0;
+            // Destructure the response into separate variables
+            _overallScore = (data['overall_score'] as num?)?.toDouble() ?? 0.0;
 
-            // Build a formatted string from the response data
-            String formattedResult = 'Skills Detected:\n';
-
-            if (skills is List) {
-              for (var skill in skills) {
-                if (skill is Map) {
-                  String skillName = skill['name'] ?? 'Unknown Skill';
-                  String level = skill['level'] ?? '';
-                  formattedResult +=
-                      '- $skillName ${level.isNotEmpty ? "($level)" : ""}\n';
-                } else if (skill is String) {
-                  formattedResult += '- $skill\n';
-                }
-              }
+            // Extract recommendations
+            if (data['recommendations'] is List) {
+              _recommendations = List<String>.from(data['recommendations'] ?? []);
             }
 
-            formattedResult += '\nRecommendations:\n';
-            if (recommendations is List) {
-              for (int i = 0; i < recommendations.length; i++) {
-                formattedResult += '${i + 1}. ${recommendations[i]}\n';
-              }
+            // Extract skills analysis
+            if (data['skills_analysis'] is Map) {
+              _skillsAnalysis = Map<String, dynamic>.from(data['skills_analysis'] ?? {});
             }
 
-            formattedResult += '\nMatch Score: $matchScore% for tech positions';
-
-            // If there's a summary field in the data, add it
-            if (data.containsKey('summary')) {
-              formattedResult =
-                  'Summary:\n${data['summary']}\n\n$formattedResult';
+            // Extract ATS analysis
+            if (data['ats_analysis'] is Map) {
+              _atsAnalysis = Map<String, dynamic>.from(data['ats_analysis'] ?? {});
+              // Combine ATS issues and warnings into our issues list
+              _issues = [
+                ...(_atsAnalysis['issues'] as List<dynamic>? ?? []).cast<String>(),
+                ...(_atsAnalysis['warnings'] as List<dynamic>? ?? []).cast<String>(),
+              ];
             }
 
-            _analysisResult = formattedResult;
+            // Extract experience analysis
+            if (data['experience_analysis'] is Map) {
+              _experienceAnalysis = Map<String, dynamic>.from(data['experience_analysis'] ?? {});
+              // Add experience issues to our main issues list
+              _issues.addAll(
+                (_experienceAnalysis['issues'] as List<dynamic>? ?? []).cast<String>(),
+              );
+            }
+
+            // Extract formatting analysis
+            if (data['formatting_analysis'] is Map) {
+              _formattingAnalysis = Map<String, dynamic>.from(data['formatting_analysis'] ?? {});
+              // Add formatting issues to our main issues list
+              _issues.addAll(
+                (_formattingAnalysis['issues'] as List<dynamic>? ?? []).cast<String>(),
+              );
+            }
           });
+
+          _animationController.reset();
+          _animationController.forward();
         } else {
-          // API returned an error status
           throw Exception(result['error'] ?? 'Failed to analyze resume');
         }
       } else {
         throw Exception(
             'Failed to analyze resume. Status code: ${response.statusCode}');
       }
-
-      _animationController.reset();
-      _animationController.forward();
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -254,7 +263,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
             Container(
               width: double.infinity,
               padding:
-                  const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
+              const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -334,7 +343,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
                 children: [
                   const SizedBox(height: 25),
 
-                  // File Upload Card - Make this more prominent
+                  // File Upload Card
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -443,7 +452,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
                                             _pickFile,
                                             width: screenSize.width * 0.3,
                                           ),
-                                          const SizedBox(width: 15),
+                                          const SizedBox(width: 8),
                                           _buildActionButton(
                                             _isLoading
                                                 ? 'Analyzing...'
@@ -579,7 +588,6 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
   }
 
   Widget _buildSelectedFilePreview() {
-    // Create a colorful file preview card
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
@@ -611,7 +619,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: List.generate(
                       5,
-                      (index) => Container(
+                          (index) => Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         height: 4,
                         width: index.isEven ? 60 : 40,
@@ -709,13 +717,13 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
   }
 
   Widget _buildActionButton(
-    String label,
-    IconData iconData,
-    Color color,
-    VoidCallback? onPressed, {
-    bool isLoading = false,
-    double width = 200,
-  }) {
+      String label,
+      IconData iconData,
+      Color color,
+      VoidCallback? onPressed, {
+        bool isLoading = false,
+        double width = 200,
+      }) {
     return SizedBox(
       width: width,
       height: 50,
@@ -723,13 +731,13 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
         onPressed: onPressed,
         icon: isLoading
             ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
             : Icon(iconData),
         label: Text(label),
         style: ElevatedButton.styleFrom(
@@ -819,7 +827,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Match Score',
+                  'Overall score',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -828,21 +836,15 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
                 Row(
                   children: [
                     Text(
-                      '78%',
+                      '${_overallScore.toStringAsFixed(1)}%',
                       style: TextStyle(
-                        color: Colors.greenAccent,
+                        color: _getScoreColor(_overallScore),
                         fontWeight: FontWeight.bold,
                         fontSize: 22,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'for Tech Positions',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
+
                   ],
                 ),
               ],
@@ -851,17 +853,73 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
 
           const SizedBox(height: 24),
 
-          // Analysis data
-          Text(
-            _analysisResult,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              height: 1.6,
+          // Analysis date
+          if (_analysisDate.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                'Analyzed on: ',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 20),
+          // Skills section
+          if (_skillsAnalysis.isNotEmpty) ...[
+            _buildAnalysisSection(
+              'Skills Analysis',
+              Icons.code,
+              [
+                if (_skillsAnalysis['programming'] is List && (_skillsAnalysis['programming'] as List).isNotEmpty)
+                  _buildSkillsList('Programming', _skillsAnalysis['programming']),
+                if (_skillsAnalysis['soft_skills'] is List && (_skillsAnalysis['soft_skills'] as List).isNotEmpty)
+                  _buildSkillsList('Soft Skills', _skillsAnalysis['soft_skills']),
+                if (_skillsAnalysis['tools'] is List && (_skillsAnalysis['tools'] as List).isNotEmpty)
+                  _buildSkillsList('Tools', _skillsAnalysis['tools']),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // Issues section
+          if (_issues.isNotEmpty) ...[
+            _buildAnalysisSection(
+              'Key Issues',
+              Icons.warning_amber_rounded,
+              _issues.map((issue) => _buildBulletPoint(issue)).toList(),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // ATS Analysis section
+          if (_atsAnalysis.isNotEmpty) ...[
+            _buildAnalysisSection(
+              'ATS Analysis',
+              Icons.auto_awesome_mosaic,
+              [
+                if (_atsAnalysis['score'] != null)
+                  _buildScoreIndicator('ATS Score', _atsAnalysis['score']),
+                if (_atsAnalysis['issues'] is List && (_atsAnalysis['issues'] as List).isNotEmpty)
+                  ..._buildSubsection('Critical Issues', _atsAnalysis['issues']),
+                if (_atsAnalysis['warnings'] is List && (_atsAnalysis['warnings'] as List).isNotEmpty)
+                  ..._buildSubsection('Warnings', _atsAnalysis['warnings']),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // Recommendations section
+          if (_recommendations.isNotEmpty) ...[
+            _buildAnalysisSection(
+              'Recommendations',
+              Icons.lightbulb_outline,
+              _recommendations.map((rec) => _buildBulletPoint(rec)).toList(),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Action buttons
           Row(
@@ -869,7 +927,6 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
             children: [
               OutlinedButton.icon(
                 onPressed: () {
-                  // Share functionality could be implemented here
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Share feature coming soon!'),
@@ -889,7 +946,6 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
               const SizedBox(width: 12),
               OutlinedButton.icon(
                 onPressed: () {
-                  // Download functionality could be implemented here
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Download feature coming soon!'),
@@ -912,6 +968,146 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
         ],
       ),
     );
+  }
+
+  Color _getScoreColor(double score) {
+    if (score >= 80) return Colors.greenAccent;
+    if (score >= 60) return Colors.yellowAccent;
+    return Colors.redAccent;
+  }
+
+  // String _formatAnalysisDate(String dateString) {
+  //   try {
+  //     final dateTime = DateTime.parse(dateString);
+  //     return DateFormat('MMM dd, yyyy - hh:mm a').format(dateTime);
+  //   } catch (e) {
+  //     return dateString;
+  //   }
+  // }
+
+  Widget _buildAnalysisSection(String title, IconData icon, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              color: Colors.cyanAccent,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: GoogleFonts.orbitron(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _buildSkillsList(String category, List<dynamic> skills) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$category:',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: skills.map((skill) => Chip(
+            label: Text(
+              skill.toString(),
+              style: const TextStyle(fontSize: 12),
+            ),
+            backgroundColor: Colors.blue.shade900,
+            labelStyle: const TextStyle(color: Colors.white),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          )).toList(),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '• ',
+            style: TextStyle(color: Colors.cyanAccent),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScoreIndicator(String label, dynamic score) {
+    final scoreValue = (score is num) ? score.toDouble() : 0.0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            '${scoreValue.toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: _getScoreColor(scoreValue),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildSubsection(String title, List<dynamic> items) {
+    return [
+      Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 8),
+      ...items.map((item) => _buildBulletPoint(item.toString())).toList(),
+      const SizedBox(height: 12),
+    ];
   }
 
   Widget _buildInfoCard() {
@@ -964,7 +1160,7 @@ class _ResumeAnalyserState extends State<ResumeAnalyser>
             icon: Icons.trending_up,
             title: 'Improvement Tips',
             description:
-                'Receive actionable suggestions to enhance your resume',
+            'Receive actionable suggestions to enhance your resume',
           ),
         ],
       ),
@@ -1029,7 +1225,6 @@ class _InfoPoint extends StatelessWidget {
   }
 }
 
-// Custom painter for grid pattern
 class GridPainter extends CustomPainter {
   final Color color;
   final double lineWidth;

@@ -1,0 +1,378 @@
+import PyPDF2
+import docx
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from collections import Counter
+import os
+from typing import Dict, List, Tuple, Optional
+import logging
+
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+
+class ResumeAnalyzer:
+    def _init_(self):
+        self.stop_words = set(stopwords.words('english'))
+        self.skills_keywords = {
+            'programming': ['python', 'java', 'c++', 'javascript', 'sql', 'html', 'css'],
+            'tools': ['git', 'docker', 'jenkins', 'aws', 'azure'],
+            'soft_skills': ['communication', 'leadership', 'teamwork', 'problem-solving']
+        }
+        self.formatting_guidelines = {
+            'font_size': {'min': 10, 'max': 12},
+            'section_headings': ['experience', 'education', 'skills', 'summary'],
+            'max_length': 2  # pages
+        }
+
+    def extract_text(self, file_path: str) -> str:
+        """Extract text from PDF or DOCX files."""
+        if file_path.endswith('.pdf'):
+            return self._extract_text_from_pdf(file_path)
+        elif file_path.endswith('.docx'):
+            return self._extract_text_from_docx(file_path)
+        else:
+            raise ValueError("Unsupported file format. Please provide a PDF or DOCX file.")
+
+    def _extract_text_from_pdf(self, file_path: str) -> str:
+        """Extract text from PDF files."""
+        text = ""
+        with open(file_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+        return text
+
+    def _extract_text_from_docx(self, file_path: str) -> str:
+        """Extract text from DOCX files."""
+        doc = docx.Document(file_path)
+        return "\n".join([paragraph.text for paragraph in doc.paragraphs])
+
+    def analyze_formatting(self, text: str) -> Dict:
+        """Analyze resume formatting."""
+        formatting_score = 100
+        issues = []
+
+        # Check for section headings
+        text_lower = text.lower()
+        missing_sections = [section for section in self.formatting_guidelines['section_headings']
+                          if section not in text_lower]
+        if missing_sections:
+            formatting_score -= len(missing_sections) * 10
+            issues.append(f"Missing sections: {', '.join(missing_sections)}")
+
+        # Check for consistent formatting
+        lines = text.split('\n')
+        if len(lines) > 0:
+            first_line_length = len(lines[0])
+            for line in lines[1:]:
+                if len(line) > 0 and abs(len(line) - first_line_length) > 20:
+                    formatting_score -= 5
+                    issues.append("Inconsistent line lengths detected")
+                    break
+
+        return {
+            'score': max(0, formatting_score),
+            'issues': issues
+        }
+
+    def extract_skills(self, text: str) -> Dict:
+        """Extract and categorize skills from resume text."""
+        skills_found = {category: [] for category in self.skills_keywords.keys()}
+
+        for category, keywords in self.skills_keywords.items():
+            for keyword in keywords:
+                if keyword.lower() in text.lower():
+                    skills_found[category].append(keyword)
+
+        return skills_found
+
+    def analyze_experience(self, text: str) -> Dict:
+        """Analyze work experience section."""
+        experience_score = 100
+        issues = []
+
+        # Check for experience section
+        if 'experience' not in text.lower():
+            experience_score -= 30
+            issues.append("No experience section found")
+            return {'score': experience_score, 'issues': issues}
+
+        # Extract dates and check for gaps
+        date_pattern = r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4}\b'
+        dates = re.findall(date_pattern, text)
+
+        if len(dates) < 2:
+            experience_score -= 20
+            issues.append("Insufficient date information in experience section")
+
+        return {
+            'score': experience_score,
+            'issues': issues,
+            'dates_found': dates
+        }
+
+    def check_ats_compatibility(self, text: str) -> Dict:
+        """Check ATS compatibility of the resume."""
+        ats_score = 100
+        issues = []
+        warnings = []
+
+        # Check for standard section headings
+        required_sections = ['experience', 'skills', 'education', 'summary']
+        missing_sections = [section for section in required_sections
+                          if section not in text.lower()]
+        if missing_sections:
+            ats_score -= len(missing_sections) * 5
+            issues.append(f"Missing standard sections: {', '.join(missing_sections)}")
+
+        # Check for tables and special characters
+        if '|' in text or '\t' in text:
+            ats_score -= 10
+            issues.append("Tables detected - may cause ATS parsing issues")
+
+        # Check for special characters that might cause parsing issues
+        special_chars = ['•', '→', '⇒', '→', '✓', '★', '☆']
+        found_chars = [char for char in special_chars if char in text]
+        if found_chars:
+            ats_score -= 5
+            warnings.append(f"Special characters detected: {', '.join(found_chars)}")
+
+        # Check for proper date formats
+        date_patterns = [
+            r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4}\b',
+            r'\b\d{1,2}/\d{4}\b',
+            r'\b\d{4}\b'
+        ]
+        dates_found = False
+        for pattern in date_patterns:
+            if re.search(pattern, text):
+                dates_found = True
+                break
+        if not dates_found:
+            ats_score -= 10
+            issues.append("No properly formatted dates found")
+
+        # Check for proper bullet points
+        bullet_patterns = [r'^[•\-*]\s', r'^\d+\.\s']
+        bullets_found = False
+        for line in text.split('\n'):
+            if any(re.match(pattern, line) for pattern in bullet_patterns):
+                bullets_found = True
+                break
+        if not bullets_found:
+            ats_score -= 5
+            warnings.append("No bullet points detected - consider using bullet points for better readability")
+
+        # Check for proper spacing and formatting
+        if '\n\n\n' in text:
+            ats_score -= 5
+            warnings.append("Multiple consecutive empty lines detected")
+
+        # Check for proper file format indicators
+        if 'pdf' in text.lower() or 'docx' in text.lower():
+            ats_score -= 5
+            warnings.append("File format indicators found in text - remove them")
+
+        # Check for proper contact information format
+        contact_patterns = [
+            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',  # email
+            r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b',  # phone
+            r'\b(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\b'  # website
+        ]
+        contact_info_found = False
+        for pattern in contact_patterns:
+            if re.search(pattern, text):
+                contact_info_found = True
+                break
+        if not contact_info_found:
+            ats_score -= 10
+            issues.append("No proper contact information found")
+
+        # Check for proper job title formatting
+        job_title_patterns = [
+            r'\b(?:Senior|Junior|Lead|Principal|Staff)\s+[A-Za-z]+\s+(?:Engineer|Developer|Designer|Analyst)\b',
+            r'\b[A-Za-z]+\s+(?:Manager|Director|Specialist|Consultant)\b'
+        ]
+        job_titles_found = False
+        for pattern in job_title_patterns:
+            if re.search(pattern, text):
+                job_titles_found = True
+                break
+        if not job_titles_found:
+            ats_score -= 5
+            warnings.append("No properly formatted job titles found")
+
+        return {
+            'score': max(0, ats_score),
+            'issues': issues,
+            'warnings': warnings,
+            'recommendations': self._generate_ats_recommendations(issues, warnings)
+        }
+
+    def _generate_ats_recommendations(self, issues: List[str], warnings: List[str]) -> List[str]:
+        """Generate specific ATS-related recommendations."""
+        recommendations = []
+
+        if issues:
+            recommendations.append("Critical ATS Issues to Fix:")
+            recommendations.extend([f"- {issue}" for issue in issues])
+
+        if warnings:
+            recommendations.append("\nATS Warnings to Consider:")
+            recommendations.extend([f"- {warning}" for warning in warnings])
+
+        # Add general ATS recommendations
+        general_recommendations = [
+            "Use standard section headings (Experience, Education, Skills, Summary)",
+            "Avoid using tables or complex formatting",
+            "Use simple bullet points (• or -) instead of special characters",
+            "Ensure dates are in a standard format (e.g., Jan 2020 - Present)",
+            "Include proper contact information",
+            "Use standard job titles",
+            "Keep formatting simple and consistent",
+            "Avoid headers and footers",
+            "Use standard fonts (Arial, Times New Roman, Calibri)",
+            "Save in PDF format for best ATS compatibility"
+        ]
+
+        recommendations.append("\nGeneral ATS Best Practices:")
+        recommendations.extend([f"- {rec}" for rec in general_recommendations])
+
+        return recommendations
+
+    def analyze_resume(self, file_path: str) -> Dict:
+        """Main function to analyze the resume."""
+        try:
+            text = self.extract_text(file_path)
+
+            formatting_analysis = self.analyze_formatting(text)
+            skills_analysis = self.extract_skills(text)
+            experience_analysis = self.analyze_experience(text)
+            ats_analysis = self.check_ats_compatibility(text)
+
+            # Calculate overall score with adjusted weights
+            overall_score = (
+                formatting_analysis['score'] * 0.15 +
+                len([skill for skills in skills_analysis.values() for skill in skills]) * 2 +
+                experience_analysis['score'] * 0.25 +
+                ats_analysis['score'] * 0.4  # Increased weight for ATS score
+            )
+
+            return {
+                'overall_score': min(100, overall_score),
+                'formatting_analysis': formatting_analysis,
+                'skills_analysis': skills_analysis,
+                'experience_analysis': experience_analysis,
+                'ats_analysis': ats_analysis,
+                'recommendations': self._generate_recommendations(
+                    formatting_analysis,
+                    skills_analysis,
+                    experience_analysis,
+                    ats_analysis
+                )
+            }
+
+        except Exception as e:
+            logging.error(f"Error analyzing resume: {str(e)}")
+            return {
+                'error': str(e),
+                'overall_score': 0
+            }
+
+    def _generate_recommendations(self, formatting: Dict, skills: Dict,
+                                experience: Dict, ats: Dict) -> List[str]:
+        """Generate recommendations based on analysis results."""
+        recommendations = []
+
+        # Formatting recommendations
+        if formatting['score'] < 80:
+            recommendations.append("Improve resume formatting and structure")
+            recommendations.extend([f"- {issue}" for issue in formatting['issues']])
+
+        # Skills recommendations
+        total_skills = sum(len(skill_list) for skill_list in skills.values())
+        if total_skills < 5:
+            recommendations.append("Add more relevant skills to your resume")
+
+        # Experience recommendations
+        if experience['score'] < 80:
+            recommendations.append("Enhance your experience section")
+            recommendations.extend([f"- {issue}" for issue in experience['issues']])
+
+        # ATS recommendations
+        if ats['score'] < 80:
+            recommendations.append("Improve ATS compatibility")
+            recommendations.extend([f"- {issue}" for issue in ats['issues']])
+
+        return recommendations
+
+def main():
+    analyzer = ResumeAnalyzer()
+
+    # Example usage
+    resume_path = input("Enter the path to your resume (PDF or DOCX): ").strip('"\'')  # Remove quotes if present
+
+    # Normalize the path
+    resume_path = os.path.normpath(resume_path)
+
+    if not os.path.exists(resume_path):
+        print(f"Error: File not found at path: {resume_path}")
+        print("\nTroubleshooting tips:")
+        print("1. Make sure the file path is correct")
+        print("2. Try using forward slashes (/) instead of backslashes (\\)")
+        print("3. Make sure the file extension is .pdf or .docx")
+        print("4. Try copying and pasting the file path directly from File Explorer")
+        return
+
+    if not (resume_path.lower().endswith('.pdf') or resume_path.lower().endswith('.docx')):
+        print("Error: Unsupported file format. Please provide a PDF or DOCX file.")
+        return
+
+    try:
+        results = analyzer.analyze_resume(resume_path)
+
+        print("\nResume Analysis Results:")
+        print(f"Overall Score: {results['overall_score']}/100")
+
+        print("\nDetailed Analysis:")
+        print(f"Formatting Score: {results['formatting_analysis']['score']}/100")
+        print(f"Experience Score: {results['experience_analysis']['score']}/100")
+        print(f"ATS Compatibility Score: {results['ats_analysis']['score']}/100")
+
+        print("\nATS Analysis Details:")
+        if results['ats_analysis']['issues']:
+            print("\nCritical Issues:")
+            for issue in results['ats_analysis']['issues']:
+                print(f"- {issue}")
+
+        if results['ats_analysis']['warnings']:
+            print("\nWarnings:")
+            for warning in results['ats_analysis']['warnings']:
+                print(f"- {warning}")
+
+        print("\nATS Recommendations:")
+        for recommendation in results['ats_analysis']['recommendations']:
+            print(recommendation)
+
+        print("\nSkills Found:")
+        for category, skills in results['skills_analysis'].items():
+            if skills:
+                print(f"{category.capitalize()}: {', '.join(skills)}")
+
+        print("\nGeneral Recommendations:")
+        for recommendation in results['recommendations']:
+            print(recommendation)
+
+    except Exception as e:
+        print(f"\nError analyzing resume: {str(e)}")
+        print("\nPlease check:")
+        print("1. The file is not password protected")
+        print("2. You have read permissions for the file")
+        print("3. The file is not corrupted")
+
+if _name_ == "_main_":
+    main()

@@ -64,6 +64,7 @@ class MyApp extends StatelessWidget {
             // Otherwise, start with the splash and onboarding flow
             // return const SplashScreen(nextScreen: OnboardingScreen());
             return ResumeAnalyser();
+            // return HomeScreen();
           }
         },
       ),

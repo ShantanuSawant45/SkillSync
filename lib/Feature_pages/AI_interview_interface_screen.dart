@@ -145,6 +145,61 @@ class _AIInterviewInterfaceScreenState
     }
   }
 
+  // A helper method to speak with completion callback
+  Future<void> _speakWithCallback(String text, {Function? onComplete}) async {
+    if (text.isEmpty) {
+      print("TTS: Text is empty, not speaking");
+      if (onComplete != null) {
+        onComplete();
+      }
+      return;
+    }
+
+    print(
+        "TTS: About to speak with callback: '${text.substring(0, text.length > 50 ? 50 : text.length)}...'");
+
+    if (_isSpeaking) {
+      print("TTS: Already speaking, stopping first");
+      await _flutterTts.stop();
+    }
+
+    // Set up a one-time completion listener
+    void onCompleteHandler() {
+      print("TTS: Completion handler for callback speaking");
+      if (onComplete != null) {
+        onComplete();
+      }
+      // Remove the handler after it's called
+      _flutterTts.setCompletionHandler(() {
+        print("TTS: Regular completion handler called");
+        setState(() {
+          _isSpeaking = false;
+        });
+      });
+    }
+
+    // Temporarily override completion handler
+    _flutterTts.setCompletionHandler(onCompleteHandler);
+
+    setState(() {
+      _isSpeaking = true;
+    });
+
+    try {
+      print("TTS: Speaking with callback now");
+      var result = await _flutterTts.speak(text);
+      print("TTS: Speak with callback result: $result");
+      if (result != 1) {
+        // If speak failed, manually call the completion handler
+        onCompleteHandler();
+      }
+    } catch (e) {
+      print("TTS: Error while speaking with callback: $e");
+      // Make sure to call completion handler even on error
+      onCompleteHandler();
+    }
+  }
+
   Future<void> _initializeSpeechRecognition() async {
     try {
       bool available = await _speech.initialize(
@@ -436,11 +491,6 @@ Keep the feedback concise, professional and constructive.
       });
 
       print("FEEDBACK: Feedback added to history, now calling speak");
-      // Read the feedback aloud
-      _speak(feedback);
-
-      // Scroll to show feedback
-      _scrollToBottom();
 
       // Check if we've reached the maximum number of questions
       if (_currentQuestionNumber < _totalQuestions) {
@@ -454,6 +504,9 @@ Keep the feedback concise, professional and constructive.
           nextQuestion = _getDefaultQuestion(_currentQuestionNumber);
         }
 
+        // Store the next question for later use
+        final String currentNextQuestion = nextQuestion;
+
         setState(() {
           _currentQuestion = nextQuestion;
           _transcribedText = '';
@@ -464,14 +517,24 @@ Keep the feedback concise, professional and constructive.
           });
         });
 
+        // Read the feedback aloud first, then speak the next question when feedback is complete
         print(
-            "INTERVIEW: Next question added to history, now scheduling speak");
-        // After a short delay to allow feedback TTS to complete, read the next question
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            print("INTERVIEW: Speaking next question after delay");
-            _speak(nextQuestion);
-          }
+            "INTERVIEW: Speaking feedback, will speak next question when complete");
+
+        // Scroll to show feedback
+        _scrollToBottom();
+
+        // Use the callback version to ensure next question is read only after feedback completes
+        _speakWithCallback(feedback, onComplete: () {
+          print(
+              "FEEDBACK: Completed speaking feedback, now scheduling next question");
+          // Additional delay after feedback completes before reading the next question
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              print("INTERVIEW: Now speaking next question");
+              _speak(currentNextQuestion);
+            }
+          });
         });
       } else {
         // Interview is complete
@@ -486,13 +549,24 @@ Keep the feedback concise, professional and constructive.
           });
         });
 
-        print("INTERVIEW: Completion message added, now scheduling speak");
-        // Speak the completion message
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            print("INTERVIEW: Speaking completion message after delay");
-            _speak(completionMessage);
-          }
+        // Read the feedback aloud first, then speak the completion message
+        print(
+            "INTERVIEW: Speaking feedback, will speak completion when complete");
+
+        // Scroll to show feedback
+        _scrollToBottom();
+
+        // Use the callback version for feedback
+        _speakWithCallback(feedback, onComplete: () {
+          print(
+              "FEEDBACK: Completed speaking feedback, now scheduling completion message");
+          // Additional delay after feedback completes before reading the completion message
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              print("INTERVIEW: Now speaking completion message");
+              _speak(completionMessage);
+            }
+          });
         });
       }
 
@@ -513,14 +587,14 @@ Keep the feedback concise, professional and constructive.
       });
 
       print("FEEDBACK: Using default feedback due to error");
-      _speak(defaultFeedback);
-      _scrollToBottom();
 
       // Continue with next question if not at the end
       if (_currentQuestionNumber < _totalQuestions) {
         // Increment question number and use default question
         _currentQuestionNumber++;
         final defaultQuestion = _getDefaultQuestion(_currentQuestionNumber);
+
+        final String currentDefaultQuestion = defaultQuestion;
 
         setState(() {
           _currentQuestion = defaultQuestion;
@@ -532,11 +606,14 @@ Keep the feedback concise, professional and constructive.
           });
         });
 
-        // Schedule next question speech
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _speak(defaultQuestion);
-          }
+        // Speak the default feedback first, then proceed to the question
+        _speakWithCallback(defaultFeedback, onComplete: () {
+          // Additional delay after feedback completes
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              _speak(currentDefaultQuestion);
+            }
+          });
         });
 
         _scrollToBottom();
@@ -551,10 +628,14 @@ Keep the feedback concise, professional and constructive.
           });
         });
 
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _speak(completionMessage);
-          }
+        // Speak the default feedback first, then proceed to the completion message
+        _speakWithCallback(defaultFeedback, onComplete: () {
+          // Additional delay after feedback completes
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              _speak(completionMessage);
+            }
+          });
         });
       }
     }

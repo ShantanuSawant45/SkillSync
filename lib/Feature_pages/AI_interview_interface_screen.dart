@@ -3,6 +3,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class AIInterviewInterfaceScreen extends StatefulWidget {
   final String category;
@@ -21,6 +22,10 @@ class _AIInterviewInterfaceScreenState
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   String _transcribedText = '';
+
+  // Text to speech
+  final FlutterTts _flutterTts = FlutterTts();
+  bool _isSpeaking = false;
 
   // Gemini API
   late final GenerativeModel _model;
@@ -46,12 +51,14 @@ class _AIInterviewInterfaceScreenState
     super.initState();
     _initializeGeminiAPI();
     _initializeSpeechRecognition();
+    _initializeTextToSpeech();
     _startInterview();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _flutterTts.stop();
     super.dispose();
   }
 
@@ -60,6 +67,82 @@ class _AIInterviewInterfaceScreenState
       model: 'gemini-pro',
       apiKey: apiKey,
     );
+  }
+
+  Future<void> _initializeTextToSpeech() async {
+    try {
+      print("TTS: Initializing");
+      await _flutterTts.setLanguage("en-US");
+      await _flutterTts.setSpeechRate(0.5);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.0);
+
+      // Try to get available voices
+      try {
+        var voices = await _flutterTts.getVoices;
+        print("TTS: Available voices: $voices");
+      } catch (e) {
+        print("TTS: Could not get voices: $e");
+      }
+
+      // Try to get available languages
+      try {
+        var languages = await _flutterTts.getLanguages;
+        print("TTS: Available languages: $languages");
+      } catch (e) {
+        print("TTS: Could not get languages: $e");
+      }
+
+      _flutterTts.setStartHandler(() {
+        print("TTS: Start handler called");
+        setState(() {
+          _isSpeaking = true;
+        });
+      });
+
+      _flutterTts.setCompletionHandler(() {
+        print("TTS: Completion handler called");
+        setState(() {
+          _isSpeaking = false;
+        });
+      });
+
+      _flutterTts.setErrorHandler((error) {
+        print("TTS Error: $error");
+        setState(() {
+          _isSpeaking = false;
+        });
+      });
+
+      // Try a test speech
+      print("TTS: Trying test speech");
+      await _flutterTts.speak("TTS initialization complete");
+    } catch (e) {
+      print("TTS: Error during initialization: $e");
+    }
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.isEmpty) {
+      print("TTS: Text is empty, not speaking");
+      return;
+    }
+
+    print(
+        "TTS: About to speak: '${text.substring(0, text.length > 50 ? 50 : text.length)}...'");
+
+    if (_isSpeaking) {
+      print("TTS: Already speaking, stopping first");
+      await _flutterTts.stop();
+    }
+
+    try {
+      print("TTS: Speaking now");
+      var result = await _flutterTts.speak(text);
+      print("TTS: Speak result: $result");
+    } catch (e) {
+      print("TTS: Error while speaking: $e");
+    }
   }
 
   Future<void> _initializeSpeechRecognition() async {
@@ -118,6 +201,12 @@ class _AIInterviewInterfaceScreenState
       // Make initial API call to get first question
       String firstQuestion = await _generateInterviewQuestion();
 
+      // If we got an empty question back, use a default one
+      if (firstQuestion.trim().isEmpty) {
+        print("INTERVIEW: Received empty question, using default");
+        firstQuestion = _getDefaultQuestion(_currentQuestionNumber);
+      }
+
       setState(() {
         _currentQuestion = firstQuestion;
         _isLoading = false;
@@ -127,22 +216,28 @@ class _AIInterviewInterfaceScreenState
         });
       });
 
+      print("INTERVIEW: First question added to history, now calling speak");
+      // Read the question aloud
+      _speak(firstQuestion);
+
       // Scroll to bottom of conversation
       _scrollToBottom();
     } catch (e) {
+      // Use default question if API fails
+      final defaultQuestion = _getDefaultQuestion(_currentQuestionNumber);
+
       setState(() {
+        _currentQuestion = defaultQuestion;
         _isLoading = false;
+        _interviewHistory.add({
+          'role': 'interviewer',
+          'content': defaultQuestion,
+        });
       });
 
-      // Show error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error starting interview: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      print("INTERVIEW: Using default question due to error: $e");
+      _speak(defaultQuestion);
+      _scrollToBottom();
     }
   }
 
@@ -179,12 +274,39 @@ Provide just the question without any additional text or context.
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        String questionText = jsonResponse['candidates'][0]['content']['parts']
-                    [0]['text']
-                ?.trim() ??
-            "What experience do you have with ${widget.category}?";
+        print("API Response Structure: ${jsonResponse.keys}");
 
-        return questionText;
+        try {
+          // Attempt to parse the question from the response
+          String questionText = "";
+          if (jsonResponse.containsKey('candidates') &&
+              jsonResponse['candidates'].isNotEmpty &&
+              jsonResponse['candidates'][0].containsKey('content') &&
+              jsonResponse['candidates'][0]['content'].containsKey('parts') &&
+              jsonResponse['candidates'][0]['content']['parts'].isNotEmpty) {
+            questionText = jsonResponse['candidates'][0]['content']['parts'][0]
+                        ['text']
+                    ?.trim() ??
+                "";
+            print(
+                "Successfully extracted question text: ${questionText.substring(0, questionText.length > 50 ? 50 : questionText.length)}...");
+          } else {
+            print(
+                "Cannot find expected fields in response structure: $jsonResponse");
+            // Fallback to default question
+            questionText =
+                "What experience do you have with ${widget.category}?";
+          }
+
+          // After getting the text, schedule to speak it (for debugging)
+          print(
+              "Will speak question text: ${questionText.substring(0, questionText.length > 50 ? 50 : questionText.length)}...");
+
+          return questionText;
+        } catch (e) {
+          print("Error parsing response: $e");
+          return "What experience do you have with ${widget.category}?";
+        }
       } else {
         print(
             'Error from Gemini API: ${response.statusCode}, ${response.body}');
@@ -235,12 +357,39 @@ Keep the feedback concise, professional and constructive.
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        String feedbackText = jsonResponse['candidates'][0]['content']['parts']
-                    [0]['text']
-                ?.trim() ??
-            "Your answer shows some understanding, but try to provide more specific examples next time.";
+        print("Feedback API Response Structure: ${jsonResponse.keys}");
 
-        return feedbackText;
+        try {
+          // Attempt to parse the feedback from the response
+          String feedbackText = "";
+          if (jsonResponse.containsKey('candidates') &&
+              jsonResponse['candidates'].isNotEmpty &&
+              jsonResponse['candidates'][0].containsKey('content') &&
+              jsonResponse['candidates'][0]['content'].containsKey('parts') &&
+              jsonResponse['candidates'][0]['content']['parts'].isNotEmpty) {
+            feedbackText = jsonResponse['candidates'][0]['content']['parts'][0]
+                        ['text']
+                    ?.trim() ??
+                "";
+            print(
+                "Successfully extracted feedback text: ${feedbackText.substring(0, feedbackText.length > 50 ? 50 : feedbackText.length)}...");
+          } else {
+            print(
+                "Cannot find expected fields in feedback response: $jsonResponse");
+            // Fallback to default feedback
+            feedbackText =
+                "Your answer shows some understanding, but try to provide more specific examples next time.";
+          }
+
+          // After getting the text, schedule to speak it (for debugging)
+          print(
+              "Will speak feedback text: ${feedbackText.substring(0, feedbackText.length > 50 ? 50 : feedbackText.length)}...");
+
+          return feedbackText;
+        } catch (e) {
+          print("Error parsing feedback response: $e");
+          return "Your answer shows some understanding, but try to provide more specific examples next time.";
+        }
       } else {
         print(
             'Error from Gemini API: ${response.statusCode}, ${response.body}');
@@ -272,6 +421,12 @@ Keep the feedback concise, professional and constructive.
       // Generate feedback based on the answer
       String feedback = await _generateFeedback(answer);
 
+      // If feedback is empty, use default
+      if (feedback.trim().isEmpty) {
+        print("FEEDBACK: Received empty feedback, using default");
+        feedback = _getDefaultFeedback();
+      }
+
       setState(() {
         _currentFeedback = feedback;
         _interviewHistory.add({
@@ -279,6 +434,10 @@ Keep the feedback concise, professional and constructive.
           'content': feedback,
         });
       });
+
+      print("FEEDBACK: Feedback added to history, now calling speak");
+      // Read the feedback aloud
+      _speak(feedback);
 
       // Scroll to show feedback
       _scrollToBottom();
@@ -289,6 +448,12 @@ Keep the feedback concise, professional and constructive.
         _currentQuestionNumber++;
         String nextQuestion = await _generateInterviewQuestion();
 
+        // If we got an empty question back, use a default one
+        if (nextQuestion.trim().isEmpty) {
+          print("INTERVIEW: Received empty next question, using default");
+          nextQuestion = _getDefaultQuestion(_currentQuestionNumber);
+        }
+
         setState(() {
           _currentQuestion = nextQuestion;
           _transcribedText = '';
@@ -298,38 +463,123 @@ Keep the feedback concise, professional and constructive.
             'content': nextQuestion,
           });
         });
+
+        print(
+            "INTERVIEW: Next question added to history, now scheduling speak");
+        // After a short delay to allow feedback TTS to complete, read the next question
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            print("INTERVIEW: Speaking next question after delay");
+            _speak(nextQuestion);
+          }
+        });
       } else {
         // Interview is complete
+        final String completionMessage =
+            'Thank you for completing the interview! I hope the feedback has been helpful.';
+
         setState(() {
           _isProcessing = false;
           _interviewHistory.add({
             'role': 'interviewer',
-            'content':
-                'Thank you for completing the interview! I hope the feedback has been helpful.',
+            'content': completionMessage,
           });
+        });
+
+        print("INTERVIEW: Completion message added, now scheduling speak");
+        // Speak the completion message
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            print("INTERVIEW: Speaking completion message after delay");
+            _speak(completionMessage);
+          }
         });
       }
 
       // Scroll to bottom to show new content
       _scrollToBottom();
     } catch (e) {
+      print("ERROR: Exception in submit answer: $e");
+
+      // Use default feedback
+      final defaultFeedback = _getDefaultFeedback();
+
       setState(() {
-        _isProcessing = false;
+        _currentFeedback = defaultFeedback;
+        _interviewHistory.add({
+          'role': 'feedback',
+          'content': defaultFeedback,
+        });
       });
 
-      // Show error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error processing response: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      print("FEEDBACK: Using default feedback due to error");
+      _speak(defaultFeedback);
+      _scrollToBottom();
+
+      // Continue with next question if not at the end
+      if (_currentQuestionNumber < _totalQuestions) {
+        // Increment question number and use default question
+        _currentQuestionNumber++;
+        final defaultQuestion = _getDefaultQuestion(_currentQuestionNumber);
+
+        setState(() {
+          _currentQuestion = defaultQuestion;
+          _transcribedText = '';
+          _isProcessing = false;
+          _interviewHistory.add({
+            'role': 'interviewer',
+            'content': defaultQuestion,
+          });
+        });
+
+        // Schedule next question speech
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _speak(defaultQuestion);
+          }
+        });
+
+        _scrollToBottom();
+      } else {
+        // End the interview with default completion message
+        final completionMessage = 'Thank you for completing the interview!';
+        setState(() {
+          _isProcessing = false;
+          _interviewHistory.add({
+            'role': 'interviewer',
+            'content': completionMessage,
+          });
+        });
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _speak(completionMessage);
+          }
+        });
       }
     }
   }
 
+  // Default feedback if API fails
+  String _getDefaultFeedback() {
+    final List<String> defaultFeedback = [
+      "Your answer shows understanding of the topic. To improve, consider providing more specific examples from your experience.",
+      "You've covered the basics well. For a stronger answer, try to include technical details and measurable outcomes.",
+      "Good points were made in your response. To enhance it further, consider discussing real-world applications.",
+      "Your answer demonstrates knowledge. To make it more compelling, try structuring it with a clear beginning, middle, and conclusion.",
+      "You've shared some interesting insights. Adding specific technical challenges you've overcome would make it stronger.",
+    ];
+
+    // Get random feedback
+    return defaultFeedback[
+        DateTime.now().millisecondsSinceEpoch % defaultFeedback.length];
+  }
+
   Future<void> _startListening() async {
+    if (_isSpeaking) {
+      await _flutterTts.stop();
+    }
+
     if (!_isListening) {
       bool available = await _speech.initialize();
       if (available) {
@@ -379,6 +629,23 @@ Keep the feedback concise, professional and constructive.
         );
       }
     });
+  }
+
+  // Fallback questions if API fails
+  String _getDefaultQuestion(int questionNumber) {
+    final List<String> defaultQuestions = [
+      "Tell me about your experience with ${widget.category}.",
+      "What challenging problems have you solved in ${widget.category}?",
+      "How do you keep your ${widget.category} skills up to date?",
+      "What's your approach to learning new concepts in ${widget.category}?",
+      "Describe a project where you used ${widget.category} effectively.",
+      "What are the most important skills for someone working with ${widget.category}?",
+      "Where do you see ${widget.category} evolving in the next few years?",
+    ];
+
+    // Get question based on current number (with wraparound)
+    int index = (questionNumber - 1) % defaultQuestions.length;
+    return defaultQuestions[index];
   }
 
   @override
@@ -597,13 +864,34 @@ Keep the feedback concise, professional and constructive.
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'AI Interviewer',
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'AI Interviewer',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    // TTS Button
+                    InkWell(
+                      onTap: () => _speak(message),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.purpleAccent.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.volume_up,
+                          color: Colors.purpleAccent,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Container(
@@ -726,19 +1014,40 @@ Keep the feedback concise, professional and constructive.
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  Icons.lightbulb,
-                  color: Colors.amber,
-                  size: 16,
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.lightbulb,
+                      color: Colors.amber,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Feedback',
+                      style: TextStyle(
+                        color: Colors.amber[300],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Feedback',
-                  style: TextStyle(
-                    color: Colors.amber[300],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                // TTS Button
+                InkWell(
+                  onTap: () => _speak(message),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.volume_up,
+                      color: Colors.amber,
+                      size: 16,
+                    ),
                   ),
                 ),
               ],

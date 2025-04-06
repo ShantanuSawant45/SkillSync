@@ -5,9 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../Feature_pages/AI_mock_interview_screen.dart';
 import '../Feature_pages/Quiz_screen.dart';
 import '../Feature_pages/resume_analyser.dart';
-import '../Feature_pages/summary_generator.dart';
-
-
+import '../Feature_pages/posture_detector.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -56,17 +54,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       screen: const ResumeAnalyser(),
     ),
     FeatureCard(
-      title: 'Summary Generator',
-      description: 'Convert handwritten notes into digital summaries',
+      title: 'Posture Detector',
+      description: 'Get a score on your posture',
       iconData: Icons.text_fields,
       gradient: const LinearGradient(
         colors: [Color(0xFF00667C), Color(0xFF127E83)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      screen: const SummaryGenerator(),
+      screen: const Posturedetector(),
     ),
-
   ];
 
   @override
@@ -283,10 +280,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
+        // Clamp the opacity value between 0.0 and 1.0
+        final clampedOpacity = animation.value.clamp(0.0, 1.0);
+
         return Transform.translate(
           offset: Offset(0, 50 * (1 - animation.value)),
           child: Opacity(
-            opacity: animation.value,
+            opacity: clampedOpacity,
             child: child,
           ),
         );
@@ -707,10 +707,3 @@ class ParticlesPainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
-
-
-
-
-
-
-
